@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("FFXIVRaffle4All")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+78256730dce8e0a9f93c68bab317979965a6fad8")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+88e6a1b105f846955439ad81867eb04461a11ac6")]
 [assembly: System.Reflection.AssemblyProductAttribute("FFXIVRaffle4All")]
 [assembly: System.Reflection.AssemblyTitleAttribute("FFXIVRaffle4All")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

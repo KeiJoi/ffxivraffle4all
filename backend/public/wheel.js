@@ -13,6 +13,12 @@
     spinning: false,
     connected: false,
     role: window.RAFFLE_ROLE || "viewer",
+    pendingWinnerName: null,
+    pendingWinnerIndex: null,
+    highlightIndex: null,
+    highlightStart: 0,
+    highlightDuration: 0,
+    winnerTimer: null,
   };
 
   const pathParts = window.location.pathname.split("/").filter(Boolean);
@@ -46,6 +52,7 @@
   ws.addEventListener("message", (event) => {
     const message = JSON.parse(event.data);
     if (message.type === "state") {
+      resetSpinEffects();
       state.tickets = message.tickets || [];
       state.rotation = message.rotation || 0;
       updateWinner(message.winnerName);
@@ -55,6 +62,7 @@
     }
 
     if (message.type === "updated") {
+      resetSpinEffects();
       state.tickets = message.tickets || [];
       state.rotation = message.rotation || 0;
       updateWinner(message.winnerName);
@@ -64,8 +72,10 @@
     }
 
     if (message.type === "spin") {
-      updateWinner(message.winnerName);
-      animateSpin(message.rotation, message.durationMs);
+      queueWinner(message.winnerName, message.winnerIndex);
+      animateSpin(message.rotation, message.durationMs, () => {
+        revealWinnerAfterHighlight();
+      });
     }
 
     if (message.type === "error") {
@@ -84,6 +94,55 @@
       }
       ws.send(JSON.stringify({ type: "spin" }));
     });
+  }
+
+  function resetSpinEffects() {
+    if (state.winnerTimer) {
+      clearTimeout(state.winnerTimer);
+      state.winnerTimer = null;
+    }
+    state.pendingWinnerName = null;
+    state.pendingWinnerIndex = null;
+    state.highlightIndex = null;
+    state.highlightStart = 0;
+    state.highlightDuration = 0;
+  }
+
+  function queueWinner(name, index) {
+    if (state.winnerTimer) {
+      clearTimeout(state.winnerTimer);
+      state.winnerTimer = null;
+    }
+    state.pendingWinnerName = name || null;
+    const parsedIndex = Number.isFinite(Number(index)) ? Number(index) : null;
+    if (Number.isInteger(parsedIndex)) {
+      state.pendingWinnerIndex = parsedIndex;
+    } else if (name) {
+      state.pendingWinnerIndex = state.tickets.indexOf(name);
+    } else {
+      state.pendingWinnerIndex = null;
+    }
+    updateWinner(null);
+  }
+
+  function revealWinnerAfterHighlight() {
+    const delayMs = 3000;
+    if (Number.isInteger(state.pendingWinnerIndex)) {
+      state.highlightIndex = state.pendingWinnerIndex;
+      state.highlightStart = performance.now();
+      state.highlightDuration = delayMs;
+      animateHighlight();
+    }
+
+    state.winnerTimer = setTimeout(() => {
+      updateWinner(state.pendingWinnerName);
+      state.highlightIndex = null;
+      state.highlightStart = 0;
+      state.highlightDuration = 0;
+      state.pendingWinnerName = null;
+      state.pendingWinnerIndex = null;
+      drawWheel();
+    }, delayMs);
   }
 
   function setStatus(text) {
@@ -141,13 +200,22 @@
     const textColor = getWheelTextColor();
     const borderColor = getWheelBorderColor();
     const step = (Math.PI * 2) / state.tickets.length;
+    const now = performance.now();
+    const highlightPop = getHighlightPop(now, radius);
 
     for (let i = 0; i < state.tickets.length; i += 1) {
       const start = state.rotation + i * step;
       const end = start + step;
+      const angle = start + step / 2;
+      const isHighlight = highlightPop > 0 && state.highlightIndex === i;
+      const popOffset = isHighlight ? highlightPop * 0.35 : 0;
+      const wedgeRadius = isHighlight ? radius + highlightPop : radius;
+      const wedgeCenterX = center + Math.cos(angle) * popOffset;
+      const wedgeCenterY = center + Math.sin(angle) * popOffset;
+
       ctx.beginPath();
-      ctx.moveTo(center, center);
-      ctx.arc(center, center, radius, start, end);
+      ctx.moveTo(wedgeCenterX, wedgeCenterY);
+      ctx.arc(wedgeCenterX, wedgeCenterY, wedgeRadius, start, end);
       ctx.closePath();
       ctx.fillStyle = colors[i % colors.length];
       ctx.fill();
@@ -155,24 +223,28 @@
       ctx.strokeStyle = borderColor;
       ctx.stroke();
 
-      const angle = start + step / 2;
-      drawLabel(state.tickets[i], center, radius, angle, step, textColor);
+      drawLabel(state.tickets[i], wedgeCenterX, wedgeCenterY, wedgeRadius, angle, step, textColor, isHighlight);
     }
   }
 
-  function drawLabel(text, center, radius, angle, step, textColor) {
+  function drawLabel(text, centerX, centerY, radius, angle, step, textColor, isHighlight) {
     const fontFamily = getWheelFont();
-    let fontSize = Math.max(10, Math.min(28, radius * step * 0.85));
+    const arcLength = radius * step;
+    let fontSize = Math.max(10, Math.min(34, arcLength * 0.7));
+    if (isHighlight) {
+      fontSize = Math.min(44, fontSize * 1.4);
+    }
     ctx.save();
-    ctx.translate(center, center);
+    ctx.translate(centerX, centerY);
     ctx.rotate(angle);
-    ctx.translate(radius * 0.62, 0);
+    ctx.translate(radius * 0.86, 0);
+    ctx.rotate(Math.PI / 2);
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillStyle = textColor;
     ctx.font = `${fontSize}px ${fontFamily}`;
 
-    const maxWidth = radius * 0.7;
+    const maxWidth = arcLength * 0.9;
     const measured = ctx.measureText(text);
     if (measured.width > maxWidth) {
       fontSize = Math.max(8, fontSize * (maxWidth / measured.width));
@@ -183,10 +255,33 @@
     ctx.restore();
   }
 
-  function animateSpin(targetRotation, durationMs) {
+  function getHighlightPop(now, radius) {
+    if (state.highlightIndex === null || state.highlightStart <= 0 || state.highlightDuration <= 0) {
+      return 0;
+    }
+    const elapsed = now - state.highlightStart;
+    if (elapsed > state.highlightDuration) {
+      return 0;
+    }
+    const eased = easeOutCubic(Math.min(1, elapsed / 300));
+    return radius * 0.2 * eased;
+  }
+
+  function animateHighlight() {
+    if (state.highlightIndex === null || state.highlightStart <= 0 || state.highlightDuration <= 0) {
+      return;
+    }
+    drawWheel();
+    const elapsed = performance.now() - state.highlightStart;
+    if (elapsed < state.highlightDuration) {
+      requestAnimationFrame(animateHighlight);
+    }
+  }
+
+  function animateSpin(targetRotation, durationMs, onComplete) {
     const startRotation = state.rotation;
     const startTime = performance.now();
-    const duration = Math.max(1000, durationMs || 6000);
+    const duration = Math.max(5000, durationMs || 6000);
     state.spinning = true;
     if (spinButton) {
       spinButton.disabled = true;
@@ -204,6 +299,9 @@
         state.spinning = false;
         if (spinButton) {
           spinButton.disabled = false;
+        }
+        if (onComplete) {
+          onComplete();
         }
       }
     };

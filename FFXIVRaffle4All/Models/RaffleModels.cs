@@ -21,6 +21,7 @@ public sealed class Raffle
     public int TotalTickets => TotalPaidTickets + TotalFreeTickets;
     public float RunningPot => Settings.StartingPot + (Settings.TicketCost * TotalPaidTickets);
     public float PrizePot => RunningPot * (Settings.PrizePercentage / 100f);
+    public float HouseTake => RunningPot - PrizePot;
 }
 
 public sealed class RaffleSettings

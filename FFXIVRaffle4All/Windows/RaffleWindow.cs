@@ -1,9 +1,11 @@
 using System;
 using System.Globalization;
+using System.IO;
 using System.Numerics;
 using System.Threading;
 using System.Threading.Tasks;
 using Dalamud.Bindings.ImGui;
+using Dalamud.Interface.ImGuiFileDialog;
 using Dalamud.Interface.Windowing;
 using Dalamud.Plugin.Services;
 using FFXIVRaffle4All.Models;
@@ -17,7 +19,9 @@ public sealed class RaffleWindow : Window
     private readonly BackendClient backendClient;
     private readonly PluginConfiguration configuration;
     private readonly ITargetManager targetManager;
+    private readonly FileDialogManager fileDialogManager = new();
     private readonly XlsxExporter xlsxExporter = new();
+    private readonly XlsxImporter xlsxImporter = new();
     private readonly string configDirectory;
 
     private string newRaffleName = string.Empty;
@@ -27,6 +31,8 @@ public sealed class RaffleWindow : Window
     private int freeTicketsInput = 1;
     private string backendUrlInput;
     private string statusMessage = string.Empty;
+    private string importPathInput = string.Empty;
+    private string exportPathInput = string.Empty;
     private bool isBusy;
 
     public RaffleWindow(
@@ -70,6 +76,8 @@ public sealed class RaffleWindow : Window
         ImGui.BeginChild("RightPanel", new Vector2(0, 0), true);
         DrawRightPanel(raffle);
         ImGui.EndChild();
+
+        fileDialogManager.Draw();
     }
 
     private void DrawRaffleCreationOnly()
@@ -194,6 +202,7 @@ public sealed class RaffleWindow : Window
         ImGui.Text($"Total tickets: {raffle.TotalTickets}");
         ImGui.Text($"Running pot: {raffle.RunningPot:0.00}");
         ImGui.Text($"Prize pot: {raffle.PrizePot:0.00}");
+        ImGui.Text($"House take: {raffle.HouseTake:0.00}");
     }
 
     private void DrawTicketEntry(Raffle raffle)
@@ -221,14 +230,22 @@ public sealed class RaffleWindow : Window
 
         if (ImGui.Button("Add paid tickets"))
         {
-            raffleManager.AddPaidTickets(nameInput, paidTicketsInput);
+            if (TryValidateName(nameInput, out var normalizedName))
+            {
+                raffleManager.AddPaidTickets(normalizedName, paidTicketsInput);
+                nameInput = string.Empty;
+            }
         }
 
         ImGui.InputInt("Free tickets", ref freeTicketsInput);
         freeTicketsInput = Math.Max(0, freeTicketsInput);
         if (ImGui.Button("Add free tickets"))
         {
-            raffleManager.AddFreeTickets(nameInput, Math.Max(0, freeTicketsInput));
+            if (TryValidateName(nameInput, out var normalizedName))
+            {
+                raffleManager.AddFreeTickets(normalizedName, Math.Max(0, freeTicketsInput));
+                nameInput = string.Empty;
+            }
         }
     }
 
@@ -275,8 +292,22 @@ public sealed class RaffleWindow : Window
         ImGui.Text("Export");
         if (ImGui.Button("Export raffle to XLSX"))
         {
-            var path = xlsxExporter.Export(raffle, configDirectory);
-            statusMessage = $"Exported XLSX to {path}";
+            OpenExportDialog(raffle);
+        }
+        if (!string.IsNullOrWhiteSpace(exportPathInput))
+        {
+            ImGui.TextWrapped($"Last export: {exportPathInput}");
+        }
+
+        ImGui.Spacing();
+        ImGui.Text("Import");
+        if (ImGui.Button("Import raffle from XLSX"))
+        {
+            OpenImportDialog();
+        }
+        if (!string.IsNullOrWhiteSpace(importPathInput))
+        {
+            ImGui.TextWrapped($"Selected: {importPathInput}");
         }
     }
 
@@ -429,6 +460,79 @@ public sealed class RaffleWindow : Window
 
         var rawName = target.Name.TextValue;
         return RaffleManager.NormalizeName(rawName);
+    }
+
+    private bool TryValidateName(string input, out string normalizedName)
+    {
+        normalizedName = RaffleManager.NormalizeName(input);
+        if (normalizedName.Length < 3)
+        {
+            statusMessage = "Name must be at least 3 characters.";
+            return false;
+        }
+
+        return true;
+    }
+
+    private void TryImportRaffle(string path)
+    {
+        try
+        {
+            var raffle = xlsxImporter.Import(path);
+            raffleManager.ImportRaffle(raffle);
+            statusMessage = $"Imported raffle \"{raffle.Name}\".";
+        }
+        catch (Exception ex)
+        {
+            statusMessage = $"Import failed: {ex.Message}";
+        }
+    }
+
+    private void OpenExportDialog(Raffle raffle)
+    {
+        var exportDir = Path.Combine(configDirectory, "exports");
+        Directory.CreateDirectory(exportDir);
+        var defaultName = xlsxExporter.GetDefaultFileName(raffle);
+        fileDialogManager.SaveFileDialog(
+            "Export raffle",
+            "Excel Files{.xlsx}",
+            defaultName,
+            "xlsx",
+            (ok, path) =>
+            {
+                if (!ok)
+                {
+                    return;
+                }
+
+                var exportedPath = xlsxExporter.Export(raffle, configDirectory, path);
+                exportPathInput = exportedPath;
+                statusMessage = $"Exported XLSX to {exportedPath}";
+            },
+            exportDir,
+            true);
+    }
+
+    private void OpenImportDialog()
+    {
+        var exportDir = Path.Combine(configDirectory, "exports");
+        Directory.CreateDirectory(exportDir);
+        fileDialogManager.OpenFileDialog(
+            "Import raffle",
+            "Excel Files{.xlsx}",
+            (ok, paths) =>
+            {
+                if (!ok || paths.Count == 0)
+                {
+                    return;
+                }
+
+                importPathInput = paths[0];
+                TryImportRaffle(importPathInput);
+            },
+            1,
+            exportDir,
+            true);
     }
 
     private void DrawRightPanel(Raffle raffle)

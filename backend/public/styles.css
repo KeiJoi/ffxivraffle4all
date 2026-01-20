@@ -114,12 +114,18 @@ header .meta {
   letter-spacing: 2px;
   box-shadow: 0 12px 24px rgba(0, 0, 0, 0.35);
   z-index: 2;
+  transition: box-shadow 0.2s ease;
 }
 
 .spin-button:disabled {
   opacity: 0.4;
   cursor: not-allowed;
   box-shadow: none;
+}
+
+.spin-button:hover:not(:disabled),
+.spin-button:active:not(:disabled) {
+  transform: translate(-50%, -50%);
 }
 
 .controls {

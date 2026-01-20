@@ -199,7 +199,7 @@ function spinRaffle(raffle) {
   }
   targetRotation += Math.PI * 2 * turns;
 
-  const durationMs = 6000 + crypto.randomInt(0, 2000);
+  const durationMs = 5000 + crypto.randomInt(0, 3000);
   raffle.rotation = targetRotation;
   raffle.winnerName = raffle.tickets[winnerIndex];
   raffle.updatedAt = new Date().toISOString();

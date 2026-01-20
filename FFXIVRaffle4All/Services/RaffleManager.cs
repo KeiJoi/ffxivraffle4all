@@ -36,6 +36,24 @@ public sealed class RaffleManager
         return raffle;
     }
 
+    public void ImportRaffle(Raffle raffle)
+    {
+        raffle.Id = Guid.NewGuid().ToString("N");
+        raffle.CreatedAt = raffle.CreatedAt == default ? DateTime.UtcNow : raffle.CreatedAt;
+        if (string.IsNullOrWhiteSpace(raffle.Name))
+        {
+            raffle.Name = DefaultRaffleName();
+        }
+        raffle.Participants ??= new List<RaffleParticipant>();
+        raffle.Settings ??= new RaffleSettings();
+        raffle.HostUrl = null;
+        raffle.ViewerUrl = null;
+        raffle.ExternalId = null;
+        raffles.Insert(0, raffle);
+        SetCurrent(raffle);
+        Save();
+    }
+
     public void SetCurrent(Raffle raffle)
     {
         CurrentRaffle = raffle;
