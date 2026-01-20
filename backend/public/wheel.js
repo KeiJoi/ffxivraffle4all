@@ -238,13 +238,12 @@
     ctx.translate(centerX, centerY);
     ctx.rotate(angle);
     ctx.translate(radius * 0.86, 0);
-    ctx.rotate(Math.PI / 2);
-    ctx.textAlign = "center";
+    ctx.textAlign = "right";
     ctx.textBaseline = "middle";
     ctx.fillStyle = textColor;
     ctx.font = `${fontSize}px ${fontFamily}`;
 
-    const maxWidth = arcLength * 0.9;
+    const maxWidth = radius * 0.8;
     const measured = ctx.measureText(text);
     if (measured.width > maxWidth) {
       fontSize = Math.max(8, fontSize * (maxWidth / measured.width));
