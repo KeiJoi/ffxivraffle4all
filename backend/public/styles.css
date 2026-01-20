@@ -92,7 +92,8 @@ header .meta {
   position: absolute;
   top: calc(var(--wheel-pad) - var(--pointer-height));
   left: 50%;
-  transform: translateX(-50%);
+  transform: translateX(-50%) rotate(180deg);
+  transform-origin: center;
   width: 0;
   height: 0;
   border-left: 16px solid transparent;
