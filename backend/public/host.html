@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FFXIV Raffle 4 All - Host</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <h1>FFXIV Raffle 4 All</h1>
+        <div class="ticket-count" id="ticketCount">Tickets: 0</div>
+      </div>
+      <div class="meta" id="raffleMeta">Host view</div>
+    </header>
+    <div class="content">
+      <section class="wheel-shell">
+        <canvas id="wheel"></canvas>
+        <div class="pointer"></div>
+        <button id="spinButton" class="spin-button">Spin</button>
+      </section>
+      <aside class="controls">
+        <div class="panel">
+          <h2>Host controls</h2>
+          <p class="status" id="status">Waiting for raffle data...</p>
+        </div>
+        <div class="panel">
+          <h2>Winner</h2>
+          <div class="winner" id="winnerName">-</div>
+        </div>
+      </aside>
+    </div>
+  </main>
+  <script>
+    window.RAFFLE_ROLE = "host";
+  </script>
+  <script src="/wheel.js"></script>
+</body>
+</html>

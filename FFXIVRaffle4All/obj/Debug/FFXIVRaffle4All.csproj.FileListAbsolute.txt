@@ -1,0 +1,13 @@
+C:\FFXIVplugs\ffxivraffle4all\FFXIVRaffle4All\obj\Debug\FFXIVRaffle4All.csproj.AssemblyReference.cache
+C:\FFXIVplugs\ffxivraffle4all\FFXIVRaffle4All\obj\Debug\FFXIVRaffle4All.GeneratedMSBuildEditorConfig.editorconfig
+C:\FFXIVplugs\ffxivraffle4all\FFXIVRaffle4All\obj\Debug\FFXIVRaffle4All.AssemblyInfoInputs.cache
+C:\FFXIVplugs\ffxivraffle4all\FFXIVRaffle4All\obj\Debug\FFXIVRaffle4All.AssemblyInfo.cs
+C:\FFXIVplugs\ffxivraffle4all\FFXIVRaffle4All\obj\Debug\FFXIVRaffle4All.csproj.CoreCompileInputs.cache
+C:\FFXIVplugs\ffxivraffle4all\FFXIVRaffle4All\obj\Debug\FFXIVRaffle4All.sourcelink.json
+C:\FFXIVplugs\ffxivraffle4all\FFXIVRaffle4All\bin\Debug\FFXIVRaffle4All.deps.json
+C:\FFXIVplugs\ffxivraffle4all\FFXIVRaffle4All\bin\Debug\FFXIVRaffle4All.dll
+C:\FFXIVplugs\ffxivraffle4all\FFXIVRaffle4All\obj\Debug\FFXIVRaffle4All.dll
+C:\FFXIVplugs\ffxivraffle4all\FFXIVRaffle4All\bin\Debug\DocumentFormat.OpenXml.dll
+C:\FFXIVplugs\ffxivraffle4all\FFXIVRaffle4All\bin\Debug\DocumentFormat.OpenXml.Framework.dll
+C:\FFXIVplugs\ffxivraffle4all\FFXIVRaffle4All\bin\Debug\System.IO.Packaging.dll
+C:\FFXIVplugs\ffxivraffle4all\FFXIVRaffle4All\obj\Debug\FFXIVRaf.64E509BB.Up2Date

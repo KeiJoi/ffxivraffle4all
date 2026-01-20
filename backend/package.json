@@ -1,0 +1,13 @@
+{
+  "name": "ffxiv-raffle-4-all-backend",
+  "version": "1.0.0",
+  "description": "Backend and wheel UI for FFXIV Raffle 4 All",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "ws": "^8.17.0"
+  }
+}

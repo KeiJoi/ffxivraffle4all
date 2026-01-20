@@ -1,0 +1,21 @@
+{
+  "Author": "FFXIV Raffle 4 All",
+  "Name": "FFXIV Raffle 4 All",
+  "InternalName": "FFXIVRaffle4All",
+  "AssemblyVersion": "1.0.0.0",
+  "Description": "In-game raffle ticket tracking with wheel spin web links.",
+  "ApplicableVersion": "any",
+  "RepoUrl": "",
+  "Tags": [
+    "raffle",
+    "stream",
+    "giveaway"
+  ],
+  "DalamudApiLevel": 14,
+  "LoadRequiredState": 0,
+  "LoadSync": false,
+  "CanUnloadAsync": false,
+  "LoadPriority": 0,
+  "Punchline": "Run raffles, sell tickets, and share a live wheel.",
+  "AcceptsFeedback": true
+}

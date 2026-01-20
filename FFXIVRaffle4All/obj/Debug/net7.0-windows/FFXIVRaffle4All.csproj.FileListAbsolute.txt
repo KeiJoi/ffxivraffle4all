@@ -1,0 +1,5 @@
+C:\FFXIVplugs\ffxivraffle4all\FFXIVRaffle4All\obj\Debug\net7.0-windows\FFXIVRaffle4All.GeneratedMSBuildEditorConfig.editorconfig
+C:\FFXIVplugs\ffxivraffle4all\FFXIVRaffle4All\obj\Debug\net7.0-windows\FFXIVRaffle4All.AssemblyInfoInputs.cache
+C:\FFXIVplugs\ffxivraffle4all\FFXIVRaffle4All\obj\Debug\net7.0-windows\FFXIVRaffle4All.AssemblyInfo.cs
+C:\FFXIVplugs\ffxivraffle4all\FFXIVRaffle4All\obj\Debug\net7.0-windows\FFXIVRaffle4All.csproj.CoreCompileInputs.cache
+C:\FFXIVplugs\ffxivraffle4all\FFXIVRaffle4All\obj\Debug\net7.0-windows\FFXIVRaffle4All.sourcelink.json
