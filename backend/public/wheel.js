@@ -55,7 +55,7 @@
       resetSpinEffects();
       state.tickets = message.tickets || [];
       state.rotation = message.rotation || 0;
-      updateWinner(message.winnerName);
+      updateWinnerDeferred(message.winnerName);
       updateTicketCount();
       drawWheel();
       setStatus("Connected.");
@@ -65,7 +65,7 @@
       resetSpinEffects();
       state.tickets = message.tickets || [];
       state.rotation = message.rotation || 0;
-      updateWinner(message.winnerName);
+      updateWinnerDeferred(message.winnerName);
       updateTicketCount();
       drawWheel();
       setStatus("Raffle updated.");
@@ -122,7 +122,7 @@
     } else {
       state.pendingWinnerIndex = null;
     }
-    updateWinner(null);
+    updateWinnerImmediate(null);
   }
 
   function revealWinnerAfterHighlight() {
@@ -135,7 +135,7 @@
     }
 
     state.winnerTimer = setTimeout(() => {
-      updateWinner(state.pendingWinnerName);
+      updateWinnerImmediate(state.pendingWinnerName);
       state.highlightIndex = null;
       state.highlightStart = 0;
       state.highlightDuration = 0;
@@ -151,10 +151,21 @@
     }
   }
 
-  function updateWinner(name) {
+  function updateWinnerImmediate(name) {
     if (winnerEl) {
       winnerEl.textContent = name || "-";
     }
+  }
+
+  function updateWinnerDeferred(name) {
+    if (state.spinning || state.highlightIndex !== null || state.pendingWinnerName !== null) {
+      if (name) {
+        state.pendingWinnerName = name;
+      }
+      return;
+    }
+
+    updateWinnerImmediate(name);
   }
 
   function updateTicketCount() {
@@ -201,21 +212,26 @@
     const borderColor = getWheelBorderColor();
     const step = (Math.PI * 2) / state.tickets.length;
     const now = performance.now();
-    const highlightPop = getHighlightPop(now, radius);
+    const highlightProgress = getHighlightProgress(now);
 
+    if (highlightProgress > 0 && Number.isInteger(state.highlightIndex)) {
+      drawWheelBase(center, center, radius, step, colors, borderColor, false, textColor);
+      drawHighlightTakeover(center, radius, step, colors, borderColor, textColor, highlightProgress);
+      return;
+    }
+
+    drawWheelBase(center, center, radius, step, colors, borderColor, true, textColor);
+  }
+
+  function drawWheelBase(centerX, centerY, radius, step, colors, borderColor, showLabels, textColor) {
     for (let i = 0; i < state.tickets.length; i += 1) {
       const start = state.rotation + i * step;
       const end = start + step;
       const angle = start + step / 2;
-      const isHighlight = highlightPop > 0 && state.highlightIndex === i;
-      const popOffset = isHighlight ? highlightPop * 0.35 : 0;
-      const wedgeRadius = isHighlight ? radius + highlightPop : radius;
-      const wedgeCenterX = center + Math.cos(angle) * popOffset;
-      const wedgeCenterY = center + Math.sin(angle) * popOffset;
 
       ctx.beginPath();
-      ctx.moveTo(wedgeCenterX, wedgeCenterY);
-      ctx.arc(wedgeCenterX, wedgeCenterY, wedgeRadius, start, end);
+      ctx.moveTo(centerX, centerY);
+      ctx.arc(centerX, centerY, radius, start, end);
       ctx.closePath();
       ctx.fillStyle = colors[i % colors.length];
       ctx.fill();
@@ -223,17 +239,16 @@
       ctx.strokeStyle = borderColor;
       ctx.stroke();
 
-      drawLabel(state.tickets[i], wedgeCenterX, wedgeCenterY, wedgeRadius, angle, step, textColor, isHighlight);
+      if (showLabels) {
+        drawLabel(state.tickets[i], centerX, centerY, radius, angle, step, textColor);
+      }
     }
   }
 
-  function drawLabel(text, centerX, centerY, radius, angle, step, textColor, isHighlight) {
+  function drawLabel(text, centerX, centerY, radius, angle, step, textColor) {
     const fontFamily = getWheelFont();
     const arcLength = radius * step;
     let fontSize = Math.max(10, Math.min(34, arcLength * 0.7));
-    if (isHighlight) {
-      fontSize = Math.min(44, fontSize * 1.4);
-    }
     ctx.save();
     ctx.translate(centerX, centerY);
     ctx.rotate(angle);
@@ -254,7 +269,7 @@
     ctx.restore();
   }
 
-  function getHighlightPop(now, radius) {
+  function getHighlightProgress(now) {
     if (state.highlightIndex === null || state.highlightStart <= 0 || state.highlightDuration <= 0) {
       return 0;
     }
@@ -262,8 +277,56 @@
     if (elapsed > state.highlightDuration) {
       return 0;
     }
-    const eased = easeOutCubic(Math.min(1, elapsed / 300));
-    return radius * 0.2 * eased;
+    return Math.min(1, elapsed / state.highlightDuration);
+  }
+
+  function drawHighlightTakeover(center, radius, step, colors, borderColor, textColor, progress) {
+    const index = state.highlightIndex;
+    if (index === null) {
+      return;
+    }
+
+    const eased = easeOutCubic(progress);
+    const start = state.rotation + index * step;
+    const end = start + step + (Math.PI * 2 - step) * eased;
+    const color = colors[index % colors.length];
+
+    ctx.beginPath();
+    ctx.moveTo(center, center);
+    ctx.arc(center, center, radius, start, end);
+    ctx.closePath();
+    ctx.fillStyle = color;
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = borderColor;
+    ctx.stroke();
+
+    const name = state.pendingWinnerName || state.tickets[index] || "";
+    let spinAngle = (1 - eased) * Math.PI * 4;
+    if (progress > 0.98) {
+      spinAngle = 0;
+    }
+    const radial = lerp(radius * 0.86, 0, eased);
+    let fontSize = Math.max(16, radius * (0.18 + 0.32 * eased));
+
+    ctx.save();
+    ctx.translate(center, center);
+    ctx.rotate(spinAngle);
+    ctx.translate(radial, 0);
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillStyle = textColor;
+    ctx.font = `${fontSize}px ${getWheelFont()}`;
+
+    const maxWidth = radius * 1.8;
+    const measured = ctx.measureText(name);
+    if (measured.width > maxWidth) {
+      fontSize = Math.max(12, fontSize * (maxWidth / measured.width));
+      ctx.font = `${fontSize}px ${getWheelFont()}`;
+    }
+
+    ctx.fillText(name, 0, 0);
+    ctx.restore();
   }
 
   function animateHighlight() {
@@ -310,6 +373,10 @@
 
   function easeOutCubic(t) {
     return 1 - Math.pow(1 - t, 3);
+  }
+
+  function lerp(a, b, t) {
+    return a + (b - a) * t;
   }
 
   function getWheelColors() {
